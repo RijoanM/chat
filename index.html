@@ -286,13 +286,17 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>💬 Rijoan's Chat</h1>
+            <h1>💬 OAN CHAT</h1>
             <div class="status" id="status">Peer-to-Peer Messaging</div>
         </div>
 
         <div class="content">
             <!-- Initial Setup Screen -->
             <div class="setup-screen active" id="setupScreen">
+                <div style="background: #e8f5e9; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9em; color: #2e7d32;">
+                    ℹ️ <strong>Tip:</strong> Both users must be online at the same time. Keep the page open after creating a room!
+                </div>
+
                 <div class="input-group">
                     <label for="nameInput">Your Name</label>
                     <input type="text" id="nameInput" placeholder="Enter your name" maxlength="20">
@@ -385,12 +389,17 @@
             // Generate a random room ID
             roomId = 'chat-' + Math.random().toString(36).substr(2, 9);
 
-            // Initialize PeerJS with the room ID
+            // Initialize PeerJS with the room ID using free public server
             peer = new Peer(roomId, {
+                host: '0.peerjs.com',
+                port: 443,
+                path: '/',
+                secure: true,
                 config: {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' }
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' }
                     ]
                 }
             });
@@ -418,7 +427,28 @@
 
             peer.on('error', (err) => {
                 console.error('PeerJS error:', err);
-                alert('Error creating room: ' + err.message);
+                let errorMsg = 'Error creating room. ';
+                
+                if (err.type === 'peer-unavailable') {
+                    errorMsg += 'Could not connect to peer server. Please try again.';
+                } else if (err.type === 'network') {
+                    errorMsg += 'Network error. Please check your internet connection.';
+                } else if (err.type === 'server-error') {
+                    errorMsg += 'Server error. The PeerJS server might be down. Please try again in a moment.';
+                } else if (err.type === 'socket-error') {
+                    errorMsg += 'Connection to server failed. Please refresh and try again.';
+                } else if (err.type === 'unavailable-id') {
+                    errorMsg += 'This room ID is already taken. Please create a new room.';
+                } else {
+                    errorMsg += err.message || 'Please try again.';
+                }
+                
+                alert(errorMsg);
+                updateStatus('Error - Please try again');
+                
+                // Reset to setup screen
+                document.getElementById('linkScreen').classList.remove('active');
+                document.getElementById('setupScreen').classList.add('active');
             });
         }
 
@@ -438,12 +468,17 @@
 
             updateStatus('Connecting...');
 
-            // Initialize PeerJS as a client
+            // Initialize PeerJS as a client using free public server
             peer = new Peer({
+                host: '0.peerjs.com',
+                port: 443,
+                path: '/',
+                secure: true,
                 config: {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' }
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' }
                     ]
                 }
             });
@@ -456,8 +491,22 @@
 
             peer.on('error', (err) => {
                 console.error('PeerJS error:', err);
-                alert('Error connecting to room: ' + err.message);
-                updateStatus('Connection failed');
+                let errorMsg = 'Error connecting to room. ';
+                
+                if (err.type === 'peer-unavailable') {
+                    errorMsg += 'Room not found. Make sure the room ID is correct and the host is online.';
+                } else if (err.type === 'network') {
+                    errorMsg += 'Network error. Please check your internet connection.';
+                } else if (err.type === 'server-error') {
+                    errorMsg += 'Server error. The PeerJS server might be down. Please try again in a moment.';
+                } else if (err.type === 'socket-error') {
+                    errorMsg += 'Connection to server failed. Please refresh and try again.';
+                } else {
+                    errorMsg += err.message || 'Please check the room ID and try again.';
+                }
+                
+                alert(errorMsg);
+                updateStatus('Connection failed - Please try again');
             });
         }
 
