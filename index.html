@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quick Chat - No Sign Up Messaging</title>
+    <title>Quick Chat - P2P Messaging</title>
+    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -12,340 +13,273 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             padding: 20px;
         }
 
         .container {
             background: white;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             max-width: 600px;
+            width: 100%;
             overflow: hidden;
         }
 
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 25px;
             color: white;
+            padding: 30px;
             text-align: center;
         }
 
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 8px;
+        h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
         }
 
-        .header p {
+        .status {
+            font-size: 0.9em;
             opacity: 0.9;
-            font-size: 14px;
+            margin-top: 10px;
         }
 
-        .setup-screen, .chat-screen {
+        .content {
             padding: 30px;
         }
 
-        .setup-screen {
-            text-align: center;
+        .setup-screen, .chat-screen, .link-screen {
+            display: none;
         }
 
-        .setup-screen h2 {
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 22px;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        button {
-            flex: 1;
-            padding: 15px 25px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: #f3f4f6;
-            color: #333;
-        }
-
-        .btn-secondary:hover {
-            background: #e5e7eb;
+        .setup-screen.active, .chat-screen.active, .link-screen.active {
+            display: block;
         }
 
         .input-group {
             margin-bottom: 20px;
         }
 
-        .input-group label {
+        label {
             display: block;
             margin-bottom: 8px;
-            color: #555;
+            color: #333;
             font-weight: 500;
-            text-align: left;
         }
 
-        input[type="text"] {
+        input {
             width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e5e7eb;
-            border-radius: 10px;
-            font-size: 16px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
             transition: border-color 0.3s;
         }
 
-        input[type="text"]:focus {
+        input:focus {
             outline: none;
             border-color: #667eea;
         }
 
-        .link-display {
-            background: #f9fafb;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            word-break: break-all;
-            font-family: monospace;
-            font-size: 14px;
-            border: 2px dashed #667eea;
-            color: #667eea;
-            font-weight: 600;
-        }
-
-        .info-box {
-            background: #ecfdf5;
-            border: 1px solid #6ee7b7;
-            color: #065f46;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-            font-size: 14px;
-            text-align: left;
-        }
-
-        .warning-box {
-            background: #fef3c7;
-            border: 1px solid #fbbf24;
-            color: #78350f;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-            font-size: 14px;
-        }
-
-        .chat-header {
-            background: #f9fafb;
-            padding: 15px 20px;
-            border-bottom: 2px solid #e5e7eb;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .chat-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-indicator {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #10b981;
-            animation: pulse 2s infinite;
-        }
-
-        .status-indicator.waiting {
-            background: #fbbf24;
-        }
-
-        .status-indicator.disconnected {
-            background: #ef4444;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .messages-container {
-            height: 400px;
-            overflow-y: auto;
-            padding: 20px;
-            background: #f9fafb;
-        }
-
-        .message {
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .message.sent {
-            align-items: flex-end;
-        }
-
-        .message.received {
-            align-items: flex-start;
-        }
-
-        .message.system {
-            align-items: center;
-        }
-
-        .message-bubble {
-            max-width: 70%;
-            padding: 12px 16px;
-            border-radius: 18px;
-            word-wrap: break-word;
-        }
-
-        .message.sent .message-bubble {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-bottom-right-radius: 4px;
-        }
-
-        .message.received .message-bubble {
-            background: white;
-            color: #333;
-            border-bottom-left-radius: 4px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .message.system .message-bubble {
-            background: #f3f4f6;
-            color: #6b7280;
-            font-size: 13px;
-            font-style: italic;
-            max-width: 90%;
-        }
-
-        .message-time {
-            font-size: 11px;
-            color: #9ca3af;
-            margin-top: 4px;
-            padding: 0 5px;
-        }
-
-        .input-container {
-            padding: 20px;
-            background: white;
-            border-top: 2px solid #e5e7eb;
-            display: flex;
-            gap: 10px;
-        }
-
-        .message-input {
-            flex: 1;
-            padding: 12px 15px;
-            border: 2px solid #e5e7eb;
-            border-radius: 25px;
-            font-size: 15px;
-            resize: none;
-            height: 45px;
-        }
-
-        .message-input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .send-button {
-            padding: 12px 25px;
+        .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 25px;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 1em;
             cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
             font-weight: 600;
-            transition: all 0.3s;
         }
 
-        .send-button:hover {
+        .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .send-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .btn:active {
+            transform: translateY(0);
         }
 
-        .hidden {
-            display: none;
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
         }
 
-        .empty-state {
-            text-align: center;
-            color: #9ca3af;
-            padding: 40px 20px;
-        }
-
-        .empty-state svg {
-            width: 64px;
-            height: 64px;
-            margin-bottom: 15px;
-            opacity: 0.5;
-        }
-
-        .copy-button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        .copy-button svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        .loading {
-            text-align: center;
+        .messages {
+            height: 400px;
+            overflow-y: auto;
             padding: 20px;
-            color: #6b7280;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
 
-        .spinner {
-            border: 3px solid #f3f4f6;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease-out;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-content {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 80%;
+        }
+
+        .message.sent .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.received .message-content {
+            background: white;
+        }
+
+        .message-sender {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .message.sent .message-sender {
+            color: rgba(255,255,255,0.8);
+            text-align: right;
+        }
+
+        .message-text {
+            word-wrap: break-word;
+        }
+
+        .message-input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input-container input {
+            flex: 1;
+        }
+
+        .message-input-container button {
+            width: auto;
+            padding: 12px 24px;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 15px;
+            position: relative;
+            color: #999;
+        }
+
+        .link-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px dashed #667eea;
+        }
+
+        .link-display {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            word-wrap: break-word;
+            font-family: monospace;
+            color: #667eea;
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            user-select: all;
+        }
+
+        .link-display:hover {
+            background: #f0f0f0;
+        }
+
+        .copy-notification {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            animation: slideInRight 0.3s ease-out;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .copy-notification.show {
+            display: block;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ffc107;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                border-radius: 0;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
         }
     </style>
 </head>
@@ -353,144 +287,105 @@
     <div class="container">
         <div class="header">
             <h1>💬 Quick Chat</h1>
-            <p>Peer-to-peer messaging, no server required</p>
+            <div class="status" id="status">Peer-to-Peer Messaging</div>
         </div>
 
-        <!-- Setup Screen -->
-        <div class="setup-screen" id="setupScreen">
-            <h2>Get Started</h2>
-            
-            <div class="button-group">
-                <button class="btn-primary" onclick="showCreateForm()">Create New Chat</button>
-                <button class="btn-secondary" onclick="showJoinForm()">Join Existing Chat</button>
-            </div>
-
-            <!-- Create Room Form -->
-            <div id="createForm" class="hidden">
+        <div class="content">
+            <!-- Initial Setup Screen -->
+            <div class="setup-screen active" id="setupScreen">
                 <div class="input-group">
-                    <label>Your Name</label>
-                    <input type="text" id="creatorNameInput" placeholder="Enter your name">
+                    <label for="nameInput">Your Name</label>
+                    <input type="text" id="nameInput" placeholder="Enter your name" maxlength="20">
                 </div>
-                <button class="btn-primary" onclick="createRoom()">Create Chat Room</button>
-                <div id="creatingRoom" class="hidden loading">
-                    <div class="spinner"></div>
-                    <p>Creating your chat room...</p>
-                </div>
-            </div>
 
-            <!-- Join Room Form -->
-            <div id="joinForm" class="hidden">
+                <button class="btn" onclick="createRoom()">Create New Chat</button>
+
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+
                 <div class="input-group">
-                    <label>Room ID</label>
-                    <input type="text" id="roomIdInput" placeholder="Paste the room ID">
+                    <label for="roomIdInput">Join Existing Chat</label>
+                    <input type="text" id="roomIdInput" placeholder="Enter room ID from your friend">
                 </div>
-                <div class="input-group">
-                    <label>Your Name</label>
-                    <input type="text" id="joinNameInput" placeholder="Enter your name">
-                </div>
-                <button class="btn-primary" onclick="joinRoom()">Join Chat</button>
-                <div id="joiningRoom" class="hidden loading">
-                    <div class="spinner"></div>
-                    <p>Connecting to chat room...</p>
-                </div>
+
+                <button class="btn btn-secondary" onclick="joinRoom()">Join Chat</button>
             </div>
 
-            <!-- Room Created Success -->
-            <div id="roomCreated" class="hidden">
-                <div class="info-box" style="margin-bottom: 20px;">
-                    <strong>✓ Room Created Successfully!</strong><br>
-                    Share this link with one person to start chatting.
-                </div>
+            <!-- Link Screen - Shows after creating a room -->
+            <div class="link-screen" id="linkScreen">
+                <h2 style="margin-bottom: 20px; color: #333;">🎉 Chat Room Created!</h2>
                 
-                <div class="link-display" id="roomLink"></div>
-                
-                <button class="btn-primary copy-button" onclick="copyLink()">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                    </svg>
-                    Copy Link
-                </button>
-                
-                <div class="warning-box">
-                    ⚠️ <strong>Important:</strong> Keep this page open until your friend joins. The connection is peer-to-peer, so both people need to be online.
+                <div class="warning">
+                    ⚠️ Keep this page open until your friend joins!
                 </div>
-            </div>
-        </div>
 
-        <!-- Chat Screen -->
-        <div class="chat-screen hidden" id="chatScreen">
-            <div class="chat-header">
-                <div class="chat-info">
-                    <div class="status-indicator waiting" id="statusIndicator"></div>
-                    <div>
-                        <div style="font-weight: 600; color: #333;" id="chatWithName">Waiting for connection...</div>
-                        <div style="font-size: 12px; color: #6b7280;" id="connectionStatus">Connecting...</div>
-                    </div>
+                <div class="link-box">
+                    <p style="margin-bottom: 10px; color: #666; font-weight: 600;">Share this link with your friend:</p>
+                    <div class="link-display" id="shareableLink" onclick="copyLink()"></div>
+                    <button class="btn" onclick="copyLink()">📋 Copy Link</button>
                 </div>
-                <button class="btn-secondary" style="padding: 8px 15px; font-size: 14px;" onclick="leaveChat()">Leave</button>
+
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                    <p style="color: #1976d2; margin-bottom: 10px;">
+                        <strong>Room ID:</strong> <span id="roomIdDisplay" style="font-family: monospace;"></span>
+                    </p>
+                    <p style="color: #666; font-size: 0.9em;">
+                        Your friend can also manually join using this Room ID
+                    </p>
+                </div>
+
+                <p style="margin-top: 20px; color: #999; text-align: center;">
+                    Waiting for your friend to join...
+                </p>
             </div>
 
-            <div class="messages-container" id="messagesContainer">
-                <div class="empty-state">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                    </svg>
-                    <p>Waiting for your chat partner to join...</p>
-                </div>
-            </div>
+            <!-- Chat Screen -->
+            <div class="chat-screen" id="chatScreen">
+                <div class="messages" id="messages"></div>
 
-            <div class="input-container">
-                <input type="text" class="message-input" id="messageInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)" disabled>
-                <button class="send-button" id="sendButton" onclick="sendMessage()" disabled>Send</button>
+                <div class="message-input-container">
+                    <input type="text" id="messageInput" placeholder="Type a message..." 
+                           onkeypress="if(event.key === 'Enter') sendMessage()">
+                    <button class="btn" onclick="sendMessage()">Send</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- PeerJS Library -->
-    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+    <div class="copy-notification" id="copyNotification">
+        ✓ Link copied to clipboard!
+    </div>
 
     <script>
-        let peer = null;
-        let connection = null;
-        let currentUser = null;
-        let otherUser = null;
-        let messages = [];
-        let isHost = false;
+        let peer;
+        let conn;
+        let userName;
+        let otherUserName;
+        let roomId;
 
-        // Show create form
-        function showCreateForm() {
-            document.getElementById('createForm').classList.remove('hidden');
-            document.getElementById('joinForm').classList.add('hidden');
-            document.getElementById('roomCreated').classList.add('hidden');
-        }
-
-        // Show join form
-        function showJoinForm() {
-            document.getElementById('joinForm').classList.remove('hidden');
-            document.getElementById('createForm').classList.add('hidden');
-            document.getElementById('roomCreated').classList.add('hidden');
-        }
-
-        // Create a new chat room
-        function createRoom() {
-            const name = document.getElementById('creatorNameInput').value.trim();
+        // Check if there's a room ID in the URL
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlRoomId = urlParams.get('room');
             
-            if (!name) {
+            if (urlRoomId) {
+                document.getElementById('roomIdInput').value = urlRoomId;
+            }
+        });
+
+        function createRoom() {
+            userName = document.getElementById('nameInput').value.trim();
+            
+            if (!userName) {
                 alert('Please enter your name');
                 return;
             }
 
-            currentUser = name;
-            isHost = true;
+            // Generate a random room ID
+            roomId = 'chat-' + Math.random().toString(36).substr(2, 9);
 
-            // Show loading
-            document.getElementById('creatingRoom').classList.remove('hidden');
-            document.querySelector('#createForm button').disabled = true;
-
-            // Generate a unique peer ID
-            const roomId = 'chat-' + Math.random().toString(36).substring(2, 12);
-
-            // Create peer connection
+            // Initialize PeerJS with the room ID
             peer = new Peer(roomId, {
                 config: {
                     iceServers: [
@@ -500,71 +395,50 @@
                 }
             });
 
-            peer.on('open', function(id) {
-                // Generate shareable link
-                const shareableLink = `${window.location.origin}${window.location.pathname}?room=${id}`;
-                document.getElementById('roomLink').textContent = shareableLink;
+            peer.on('open', (id) => {
+                console.log('Room created with ID:', id);
+                updateStatus('Room created! Waiting for connection...');
                 
-                // Show success screen
-                document.getElementById('createForm').classList.add('hidden');
-                document.getElementById('roomCreated').classList.remove('hidden');
+                // Generate the shareable link
+                const shareableLink = window.location.origin + window.location.pathname + '?room=' + roomId;
                 
-                // Show chat screen and wait for connection
-                showChatScreen();
+                // Show the link screen
+                document.getElementById('setupScreen').classList.remove('active');
+                document.getElementById('linkScreen').classList.add('active');
+                
+                // Display the link and room ID
+                document.getElementById('shareableLink').textContent = shareableLink;
+                document.getElementById('roomIdDisplay').textContent = roomId;
             });
 
-            peer.on('connection', function(conn) {
-                setupConnection(conn);
+            peer.on('connection', (connection) => {
+                conn = connection;
+                setupConnection();
             });
 
-            peer.on('error', function(err) {
-                console.error('Peer error:', err);
-                alert('Error creating room. Please try again.');
-                document.getElementById('creatingRoom').classList.add('hidden');
-                document.querySelector('#createForm button').disabled = false;
+            peer.on('error', (err) => {
+                console.error('PeerJS error:', err);
+                alert('Error creating room: ' + err.message);
             });
         }
 
-        // Copy room link to clipboard
-        function copyLink() {
-            const link = document.getElementById('roomLink').textContent;
-            navigator.clipboard.writeText(link).then(() => {
-                const btn = event.target.closest('button');
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Copied!';
-                setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                }, 2000);
-            }).catch(() => {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = link;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                alert('Link copied to clipboard!');
-            });
-        }
-
-        // Join existing room
         function joinRoom() {
-            const roomId = document.getElementById('roomIdInput').value.trim();
-            const name = document.getElementById('joinNameInput').value.trim();
+            userName = document.getElementById('nameInput').value.trim();
+            roomId = document.getElementById('roomIdInput').value.trim();
 
-            if (!roomId || !name) {
-                alert('Please enter both room ID and your name');
+            if (!userName) {
+                alert('Please enter your name');
                 return;
             }
 
-            currentUser = name;
-            isHost = false;
+            if (!roomId) {
+                alert('Please enter a room ID');
+                return;
+            }
 
-            // Show loading
-            document.getElementById('joiningRoom').classList.remove('hidden');
-            document.querySelector('#joinForm button').disabled = true;
+            updateStatus('Connecting...');
 
-            // Create peer
+            // Initialize PeerJS as a client
             peer = new Peer({
                 config: {
                     iceServers: [
@@ -574,209 +448,135 @@
                 }
             });
 
-            peer.on('open', function(id) {
-                // Connect to the room
-                const conn = peer.connect(roomId);
-                setupConnection(conn);
-                showChatScreen();
+            peer.on('open', () => {
+                // Connect to the host
+                conn = peer.connect(roomId);
+                setupConnection();
             });
 
-            peer.on('error', function(err) {
-                console.error('Peer error:', err);
-                alert('Error connecting to room. Please check the room ID and try again.');
-                document.getElementById('joiningRoom').classList.add('hidden');
-                document.querySelector('#joinForm button').disabled = false;
+            peer.on('error', (err) => {
+                console.error('PeerJS error:', err);
+                alert('Error connecting to room: ' + err.message);
+                updateStatus('Connection failed');
             });
         }
 
-        // Setup connection
-        function setupConnection(conn) {
-            connection = conn;
-
-            connection.on('open', function() {
+        function setupConnection() {
+            conn.on('open', () => {
                 // Send introduction
-                connection.send({
+                conn.send({
                     type: 'intro',
-                    name: currentUser
+                    name: userName
                 });
 
-                updateConnectionStatus('connected');
-                document.getElementById('messageInput').disabled = false;
-                document.getElementById('sendButton').disabled = false;
+                updateStatus('Connected!');
+                
+                // Switch to chat screen
+                document.getElementById('setupScreen').classList.remove('active');
+                document.getElementById('linkScreen').classList.remove('active');
+                document.getElementById('chatScreen').classList.add('active');
             });
 
-            connection.on('data', function(data) {
+            conn.on('data', (data) => {
                 if (data.type === 'intro') {
-                    otherUser = data.name;
-                    document.getElementById('chatWithName').textContent = `Chat with ${otherUser}`;
-                    addSystemMessage(`${otherUser} joined the chat`);
+                    otherUserName = data.name;
+                    updateStatus('Connected with ' + otherUserName);
                     
-                    // Send back intro if we haven't
-                    if (!otherUser && isHost) {
-                        connection.send({
+                    // If we haven't sent our intro yet, send it now
+                    if (!otherUserName) {
+                        conn.send({
                             type: 'intro',
-                            name: currentUser
+                            name: userName
                         });
                     }
                 } else if (data.type === 'message') {
-                    receiveMessage(data);
+                    displayMessage(data.name, data.text, 'received');
                 }
             });
 
-            connection.on('close', function() {
-                updateConnectionStatus('disconnected');
-                addSystemMessage('Connection lost');
-                document.getElementById('messageInput').disabled = true;
-                document.getElementById('sendButton').disabled = true;
+            conn.on('close', () => {
+                updateStatus('Connection closed');
+                alert('The other user has disconnected');
             });
 
-            connection.on('error', function(err) {
+            conn.on('error', (err) => {
                 console.error('Connection error:', err);
-                updateConnectionStatus('error');
+                updateStatus('Connection error');
             });
         }
 
-        // Show chat screen
-        function showChatScreen() {
-            document.getElementById('setupScreen').classList.add('hidden');
-            document.getElementById('chatScreen').classList.remove('hidden');
-        }
-
-        // Update connection status
-        function updateConnectionStatus(status) {
-            const indicator = document.getElementById('statusIndicator');
-            const statusText = document.getElementById('connectionStatus');
-
-            indicator.classList.remove('waiting', 'disconnected');
-
-            if (status === 'connected') {
-                statusText.textContent = 'Connected';
-            } else if (status === 'disconnected') {
-                indicator.classList.add('disconnected');
-                statusText.textContent = 'Disconnected';
-            } else if (status === 'error') {
-                indicator.classList.add('disconnected');
-                statusText.textContent = 'Connection error';
-            } else {
-                indicator.classList.add('waiting');
-                statusText.textContent = 'Waiting for partner...';
-            }
-        }
-
-        // Send message
         function sendMessage() {
             const input = document.getElementById('messageInput');
-            const messageText = input.value.trim();
+            const message = input.value.trim();
 
-            if (!messageText || !connection) return;
+            if (!message) return;
+            if (!conn || !conn.open) {
+                alert('Not connected to another user');
+                return;
+            }
 
-            const message = {
+            // Send the message
+            conn.send({
                 type: 'message',
-                text: messageText,
-                sender: currentUser,
-                timestamp: Date.now()
-            };
+                name: userName,
+                text: message
+            });
 
-            connection.send(message);
-            displayMessage(message, true);
+            // Display the message locally
+            displayMessage(userName, message, 'sent');
 
+            // Clear input
             input.value = '';
         }
 
-        // Receive message
-        function receiveMessage(message) {
-            displayMessage(message, false);
-        }
-
-        // Display message
-        function displayMessage(message, isSent) {
-            const container = document.getElementById('messagesContainer');
-            
-            // Remove empty state if exists
-            const emptyState = container.querySelector('.empty-state');
-            if (emptyState) {
-                emptyState.remove();
-            }
-
+        function displayMessage(sender, text, type) {
+            const messagesDiv = document.getElementById('messages');
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
-
-            const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            messageDiv.className = 'message ' + type;
 
             messageDiv.innerHTML = `
-                <div class="message-bubble">${escapeHtml(message.text)}</div>
-                <div class="message-time">${time}</div>
+                <div class="message-content">
+                    <div class="message-sender">${sender}</div>
+                    <div class="message-text">${escapeHtml(text)}</div>
+                </div>
             `;
 
-            container.appendChild(messageDiv);
-            container.scrollTop = container.scrollHeight;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
-        // Add system message
-        function addSystemMessage(text) {
-            const container = document.getElementById('messagesContainer');
-            
-            // Remove empty state if exists
-            const emptyState = container.querySelector('.empty-state');
-            if (emptyState) {
-                emptyState.remove();
-            }
-
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message system';
-            messageDiv.innerHTML = `<div class="message-bubble">${escapeHtml(text)}</div>`;
-            
-            container.appendChild(messageDiv);
-            container.scrollTop = container.scrollHeight;
+        function updateStatus(status) {
+            document.getElementById('status').textContent = status;
         }
 
-        // Handle enter key press
-        function handleKeyPress(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                sendMessage();
-            }
-        }
-
-        // Leave chat
-        function leaveChat() {
-            if (confirm('Are you sure you want to leave this chat?')) {
-                if (connection) {
-                    connection.close();
-                }
-                if (peer) {
-                    peer.destroy();
-                }
-                location.reload();
-            }
-        }
-
-        // Escape HTML to prevent XSS
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        // Check URL for room code on load
-        window.addEventListener('load', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomId = urlParams.get('room');
+        function copyLink() {
+            const linkText = document.getElementById('shareableLink').textContent;
+            
+            navigator.clipboard.writeText(linkText).then(() => {
+                // Show notification
+                const notification = document.getElementById('copyNotification');
+                notification.classList.add('show');
+                
+                // Hide after 2 seconds
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy link. Please copy it manually.');
+            });
+        }
 
-            if (roomId) {
-                document.getElementById('roomIdInput').value = roomId;
-                showJoinForm();
-            }
-        });
-
-        // Cleanup on page unload
+        // Clean up on page unload
         window.addEventListener('beforeunload', () => {
-            if (connection) {
-                connection.close();
-            }
-            if (peer) {
-                peer.destroy();
-            }
+            if (conn) conn.close();
+            if (peer) peer.destroy();
         });
     </script>
 </body>
